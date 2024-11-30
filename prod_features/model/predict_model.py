@@ -4,18 +4,18 @@ Created on Fri Nov 22 15:14:09 2024
 
 @author: anmol
 """
-
+import os
 import joblib
 import pandas as pd
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import LabelEncoder
 
 
 def predict_model(df, str, player_id):
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'model_artifacts'))
 
     if str == 'batting_strike_rate':
 
@@ -29,8 +29,8 @@ def predict_model(df, str, player_id):
         df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
 
         # Load the saved LabelEncoder during inference
-        loaded_encoder = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
+        encoder_path = os.path.join(base_path, 'label_encoders.joblib')
+        loaded_encoder = joblib.load(encoder_path)
 
         # Example: Use the loaded encoder to transform new labels during inference
         # List of categorical columns to encode
@@ -54,9 +54,8 @@ def predict_model(df, str, player_id):
         X = df
 
         # Load the saved model
-        model = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\xgboost_batting_strike_rate.joblib')
-
+        model_path = os.path.join(base_path, 'xgboost_batting_strike_rate.joblib')
+        model = joblib.load(model_path)
         # ------------------ Prediction ------------------
         # Make predictions
         y_pred = model.predict(X)
@@ -73,8 +72,8 @@ def predict_model(df, str, player_id):
         df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
 
         # Load the saved LabelEncoder during inference
-        loaded_encoder = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
+        encoder_path = os.path.join(base_path, 'label_encoders.joblib')
+        loaded_encoder = joblib.load(encoder_path)
 
         # Example: Use the loaded encoder to transform new labels during inference
         # List of categorical columns to encode
@@ -98,8 +97,8 @@ def predict_model(df, str, player_id):
         X = df
 
         # Load the saved model
-        model = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\xgboost_bowling_economy.joblib')
+        model_path = os.path.join(base_path, 'xgboost_bowling_economy.joblib')
+        model = joblib.load(model_path)
 
         # ------------------ Prediction ------------------
         # Make predictions
@@ -113,8 +112,8 @@ def predict_model(df, str, player_id):
         df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
 
         # Load the saved LabelEncoder during inference
-        loaded_encoder = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
+        encoder_path = os.path.join(base_path, 'label_encoders.joblib')
+        loaded_encoder = joblib.load(encoder_path)
 
         # Example: Use the loaded encoder to transform new labels during inference
         # List of categorical columns to encode
@@ -138,8 +137,8 @@ def predict_model(df, str, player_id):
         X = df
 
         # Load the saved model
-        model = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\xgboost_first_inning.joblib')
+        model_path = os.path.join(base_path, 'xgboost_first_inning.joblib')
+        model = joblib.load(model_path)
 
         # ------------------ Prediction ------------------
         # Make predictions
@@ -153,8 +152,8 @@ def predict_model(df, str, player_id):
         df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
 
         # Load the saved LabelEncoder during inference
-        loaded_encoder = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
+        encoder_path = os.path.join(base_path, 'label_encoders.joblib')
+        loaded_encoder = joblib.load(encoder_path)
 
         # Example: Use the loaded encoder to transform new labels during inference
         # List of categorical columns to encode
@@ -178,8 +177,8 @@ def predict_model(df, str, player_id):
         X = df
 
         # Load the saved model
-        model = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\xgboost_second_inning.joblib')
+        model_path = os.path.join(base_path, 'xgboost_second_inning.joblib')
+        model = joblib.load(model_path)
 
         # ------------------ Prediction ------------------
         # Make predictions
@@ -197,8 +196,8 @@ def predict_model(df, str, player_id):
         df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
 
         # Load the saved LabelEncoder during inference
-        loaded_encoder = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
+        encoder_path = os.path.join(base_path, 'label_encoders.joblib')
+        loaded_encoder = joblib.load(encoder_path)
 
         # Example: Use the loaded encoder to transform new labels during inference
         # List of categorical columns to encode
@@ -222,8 +221,8 @@ def predict_model(df, str, player_id):
         X = df
 
         # Load the saved model
-        model = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\xgboost_score.joblib')
+        model_path = os.path.join(base_path, 'xgboost_score.joblib')
+        model = joblib.load(model_path)
 
         # ------------------ Prediction ------------------
         # Make predictions
@@ -252,8 +251,8 @@ def predict_model(df, str, player_id):
         )
 
         # Load the saved LabelEncoder during inference
-        loaded_encoder = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
+        encoder_path = os.path.join(base_path, 'label_encoders.joblib')
+        loaded_encoder = joblib.load(encoder_path)
 
         # Example: Use the loaded encoder to transform new labels during inference
         # List of categorical columns to encode
@@ -277,8 +276,8 @@ def predict_model(df, str, player_id):
         X = df
 
         # Load the saved model
-        model = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\xgboost_score.joblib')
+        model_path = os.path.join(base_path, 'xgboost_score.joblib')
+        model = joblib.load(model_path)
 
         # ------------------ Prediction ------------------
         # Make predictions
@@ -295,8 +294,8 @@ def predict_model(df, str, player_id):
         df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
     
         # Load the saved LabelEncoder during inference
-        loaded_encoder = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
+        encoder_path = os.path.join(base_path, 'label_encoders.joblib')
+        loaded_encoder = joblib.load(encoder_path)
     
         # Example: Use the loaded encoder to transform new labels during inference
         # List of categorical columns to encode
@@ -320,8 +319,8 @@ def predict_model(df, str, player_id):
         X = df
     
         # Load the saved model
-        model = joblib.load(
-            r'C:\Users\anmol\prod_features\model_artifacts\xgboost_score.joblib')
+        model_path = os.path.join(base_path, 'xgboost_score.joblib')
+        model = joblib.load(model_path)
     
         # ------------------ Prediction ------------------
         # Make predictions

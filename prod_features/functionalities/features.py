@@ -4,6 +4,12 @@ Created on Sun Nov 24 22:49:50 2024
 
 @author: anmol
 """
+
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'prod_features')))
+
 import pandas as pd
 import joblib
 from data_preprocessing.score_calculation import scores
@@ -18,7 +24,7 @@ def bowling_economy(df):
     return economy
 
 def pitch_score(player_id,venue):
-    df=pd.read_csv(r"C:\Users\anmol\prod_features\data\full_dataset.csv ")
+    df=pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'full_dataset.csv'))
     df=df[df['venue']==venue]
     ppi=df[df['player_id']==player_id]['score'].mean()
     ppimin=df[df['player_id']==player_id]['score'].min()
@@ -26,21 +32,21 @@ def pitch_score(player_id,venue):
     return 1+((ppi-ppimin)/(ppimax-ppimin))*99
 
 def floor(player_id):
-    df=pd.read_csv(r"C:\Users\anmol\prod_features\data\full_dataset.csv ")
+    df=pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'full_dataset.csv'))
     player_id_dataframe={player_id:player_df for player_id,player_df in df.groupby('player_id')}
     avg_score=player_id_dataframe[player_id]['score'].mean()
     std_score=player_id_dataframe[player_id]['score'].std()
     return avg_score-std_score
 
 def ceil(player_id):
-    df=pd.read_csv(r"C:\Users\anmol\prod_features\data\full_dataset.csv ")
+    df=pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'full_dataset.csv'))
     player_id_dataframe={player_id:player_df for player_id,player_df in df.groupby('player_id')}
     avg_score=player_id_dataframe[player_id]['score'].mean()
     std_score=player_id_dataframe[player_id]['score'].std()
     return avg_score+std_score
 
 def batting_first_fantasy_points(player_id,df1):
-    df=pd.read_csv(r"C:\Users\anmol\prod_features\data\full_dataset.csv ")
+    df=pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'full_dataset.csv'))
     df=df.sort_values(by='start_date')
     df=df[df['player_id']==player_id]
     df=df.tail(3)
@@ -58,7 +64,7 @@ def batting_first_fantasy_points(player_id,df1):
     return (original_score,predicted_score)
 
 def chasing_first_fantasy_points(player_id,df1):
-    df=pd.read_csv(r"C:\Users\anmol\prod_features\data\full_dataset.csv ")
+    df=pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'full_dataset.csv'))
     df=df.sort_values(by='start_date')
     df=df[df['player_id']==player_id]
     df=df.tail(3)
@@ -78,16 +84,14 @@ def chasing_first_fantasy_points(player_id,df1):
 
 def relative_points(df,player_id):
     # Load the saved LabelEncoder during inference
-    loaded_encoder = joblib.load(
-        r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
-
-    
+    encoder_path = os.path.join(os.path.dirname(__file__), '..', 'model_artifacts', 'label_encoders.joblib')
+    loaded_encoder = joblib.load(encoder_path)  
     encoded_player_id = loaded_encoder['player_id'].transform([player_id])[0]
     relative_points=predict_model(df,'relative_points',encoded_player_id)
     return relative_points
 
 def matchup_rank(df,player_id):
-    df1=pd.read_csv(r"C:\Users\anmol\prod_features\data\full_dataset.csv ")
+    df1=pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'full_dataset.csv'))
     dicti={}
     for index,row in df.iterrows():
         df1=df1[df1['player_id']==row['player_id']]
@@ -106,7 +110,7 @@ def matchup_rank(df,player_id):
 def six_match_prediction(df):
     player_id=df['player_id'].iloc[0]
     target_date=df['start_date'].iloc[0]
-    df1=pd.read_csv(r"C:\Users\anmol\prod_features\data\full_dataset.csv ")
+    df1=pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'data', 'full_dataset.csv'))
     df1=df1.sort_values(by='start_date')
     # Convert the 'date' column to datetime
     df1['start_date'] = pd.to_datetime(df1['start_date'])
@@ -125,9 +129,8 @@ def six_match_prediction(df):
 
 def transaction_rating(team1,team2,temp,player_id):
     # Load the saved LabelEncoder during inference
-    loaded_encoder = joblib.load(
-        r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
-
+    encoder_path = os.path.join(os.path.dirname(__file__), '..', 'model_artifacts', 'label_encoders.joblib')
+    loaded_encoder = joblib.load(encoder_path) 
     
     encoded_player_id = loaded_encoder['player_id'].transform([player_id])[0]
     df_t=team2[team2['player_id']==encoded_player_id]
@@ -145,9 +148,8 @@ def transaction_rating(team1,team2,temp,player_id):
 def team_spider_chart(df,team1,dream_team_points):
     fes=0
     # Load the saved LabelEncoder during inference
-    loaded_encoder = joblib.load(
-        r'C:\Users\anmol\prod_features\model_artifacts\label_encoders.joblib')
-
+    encoder_path = os.path.join(os.path.dirname(__file__), '..', 'model_artifacts', 'label_encoders.joblib')
+    loaded_encoder = joblib.load(encoder_path) 
     # Transform the categorical data using the corresponding encoder
     df['player_id'] = loaded_encoder['player_id'].transform(df['player_id'])
     

@@ -1,0 +1,19 @@
+.vscode/
+.env
+
+# Python cache folders and files
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+.env/
+virtualenv/
+*venv/
