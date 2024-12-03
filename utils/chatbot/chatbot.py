@@ -1,4 +1,5 @@
 import os
+import time
 import pandas as pd
 from utils.chatbot.intent_recognizer import IntentRecognizer
 from langchain_huggingface import HuggingFaceEndpoint
@@ -16,9 +17,9 @@ os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 
 # Initialize the LLM
 llm = HuggingFaceEndpoint(
-    repo_id="meta-llama/Llama-3.2-1B-Instruct",  # Use an available model
-    temperature=0.7,  # Moved from model_kwargs
-    model_kwargs={"max_length": 512},  # Kept other parameters in model_kwargs
+    repo_id="meta-llama/Llama-3.2-1B-Instruct", 
+    temperature=0.6,  
+    model_kwargs={"max_length": 512},  
     huggingfacehub_api_token=sec_key
 )
 
@@ -112,60 +113,69 @@ class Chatbot:
         else:
             return None, None
     def process_user_query(self, user_query):
-            intent = self.intent_recognizer.recognize_intent(user_query)
-            if intent == 'exit':
-                return 'exit', None
+        recognized_intent = self.intent_recognizer.recognize_intent(user_query)
+        if recognized_intent == 'exit':
+            return 'exit', None
 
-            if intent is None:
-                return None, "I'm sorry, I didn't understand that."
+        if recognized_intent is None:
+            return None, "I'm sorry, I didn't understand that."
 
-            # Check if the user is asking for an explanation
-            explanation_keywords = ['meaning', 'mean', 'explain', 'definition', 'what is']
-            if any(keyword in user_query.lower() for keyword in explanation_keywords):
-                action = 'explain'
-            else:
-                action = 'compare'
+        # Check if the user is asking for an explanation
+        explanation_keywords = ['meaning', 'mean', 'explain', 'definition', 'what is']
+        if any(keyword in user_query.lower() for keyword in explanation_keywords):
+            action = 'explain'
+        else:
+            action = 'compare'
 
-            # Use intent for data access and metric_name_display for user-friendly output
-            metric_name_display = intent.replace('_', ' ')
+        # Use intent for data access and metric_name_display for user-friendly output
+        metric_name_display = recognized_intent.replace('_', ' ')
 
-            # Get metric meaning
-            metric_meaning = metric_meanings.get(intent, 'No explanation available.')
+        # Get metric meaning
+        metric_meaning = metric_meanings.get(recognized_intent, 'No explanation available.')
 
-            if action == 'compare':
-                metric_value1, metric_value2 = self.get_metric_values(intent)
-                if metric_value1 is not None and metric_value2 is not None:
-                    # Prepare inputs for the chain
-                    chain_inputs = {
-                        "player1_name": self.player1_name,
-                        "player2_name": self.player2_name,
-                        "metric_name": metric_name_display,
-                        "metric_meaning": metric_meaning,
-                        "metric_value1": metric_value1,
-                        "metric_value2": metric_value2
-                    }
-                    response = compare_metric_chain.invoke(chain_inputs)
-                    return intent, response.strip()
-                else:
-                    return intent, f"Data for {metric_name_display} is not available for comparison."
-            elif action == 'explain':
+        if action == 'compare':
+            metric_value1, metric_value2 = self.get_metric_values(recognized_intent)
+            if metric_value1 is not None and metric_value2 is not None:
+                # Prepare inputs for the chain
                 chain_inputs = {
+                    "player1_name": self.player1_name,
+                    "player2_name": self.player2_name,
                     "metric_name": metric_name_display,
-                    "metric_meaning": metric_meaning
+                    "metric_meaning": metric_meaning,
+                    "metric_value1": metric_value1,
+                    "metric_value2": metric_value2
                 }
-                response = explain_metric_chain.invoke(chain_inputs)
-                return intent, response.strip()
+                response = compare_metric_chain.invoke(chain_inputs)
+                return recognized_intent, response.strip()
             else:
-                return None, "I'm sorry, I didn't understand that."
+                return recognized_intent, f"Data for {metric_name_display} is not available for comparison."
+        elif action == 'explain':
+            chain_inputs = {
+                "metric_name": metric_name_display,
+                "metric_meaning": metric_meaning
+            }
+            response = explain_metric_chain.invoke(chain_inputs)
+            return recognized_intent, response.strip()
+        else:
+            return None, "Could be more specific or elaborate more on your cricket player comparison related query."
 
 
     def handle_query(self, player1_id, player2_id, user_query):
         if not self.set_players(player1_id, player2_id):
-            return {"error": "Failed to set players. Please check the player IDs."}
+            return
 
-        intent, response = self.process_user_query(user_query)
-        if intent == 'exit':
-            return {"response": "Goodbye!"}
-        if response:
-            return {"response": response}
-        return {"response": "I'm sorry, I didn't understand that."}
+        print("Hello! I will be your cricket analyst assistant. You can ask me to compare or explain any particular metric you don't understand. Let's Go!")
+        while True:
+            user_query = input("You: ")
+            if user_query.lower() in ['exit', 'quit']:
+                print("Assistant: Goodbye!")
+                break
+
+            intent, response = self.process_user_query(user_query)
+            if intent == 'exit':
+                print("Assistant: Goodbye!")
+                break
+            elif response:
+                print(f"Assistant: {response}")
+            else:
+                print("Assistant:I didn't get what you meant. Can you please rephrase or elaborate?")
