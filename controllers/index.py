@@ -9,6 +9,7 @@ from prod_features.functionalities.features import (
      team_spider_chart
 )
 from utils.chatbot.chatbot import Chatbot
+from utils.names import generate_team_names
 from prod_features.functionalities.ai import CricInfoScraper, NewsScraper, process_multiple_headlines
 # from prod_features.functionalities.ai import ai_alert
 
@@ -172,3 +173,11 @@ def chatbot():
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 400
+    
+def generate_team_names_route():
+    try:
+        team_names = generate_team_names()
+        return jsonify({"team_names": team_names}), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500

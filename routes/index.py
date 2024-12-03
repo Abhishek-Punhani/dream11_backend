@@ -1,5 +1,5 @@
 from flask import Blueprint
-from controllers.index import user_data , ai_alert,chatbot
+from controllers.index import user_data , ai_alert,chatbot,generate_team_names
 
 
 user_blueprint = Blueprint("user", __name__)
@@ -15,3 +15,7 @@ def ai_alert_route():
 @user_blueprint.route("/chat",methods=["POST"])
 def chat():
     return chatbot()
+
+@user_blueprint.route("/names",methods=["GET"])
+def get_names():
+    return generate_team_names()
