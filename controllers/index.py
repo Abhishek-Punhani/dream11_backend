@@ -8,7 +8,7 @@ from prod_features.functionalities.features import (
     relative_points, matchup_rank, six_match_prediction,
      team_spider_chart
 )
-
+from utils.chatbot.chatbot import Chatbot
 from prod_features.functionalities.ai import CricInfoScraper, NewsScraper, process_multiple_headlines
 # from prod_features.functionalities.ai import ai_alert
 
@@ -141,3 +141,34 @@ def ai_alert():
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
+    
+
+def chatbot():
+    try:
+        data = request.get_json()
+        player1_id = data.get("player1_id")
+        player2_id = data.get("player2_id")
+        user_query = data.get("user_query")
+        match_no = data.get("match_no")
+
+        # Read the CSV file based on match_no
+        file_path = f"./prod_features/data/file_{match_no}.csv"
+        df = pd.read_csv(file_path, dtype={'player_id': str})
+
+        # Extract the player names using player1_id and player2_id
+        player1_row = df[df['player_id'] == player1_id]
+        player2_row = df[df['player_id'] == player2_id]
+        if player1_row.empty or player2_row.empty:
+            return jsonify({"error": "One or both player IDs not found in the dataset."}), 404
+
+        player1_name = player1_row['player'].iloc[0]
+        player2_name = player2_row['player'].iloc[0]
+        print(f"Player 1: {player1_name}, Player 2: {player2_name}")
+
+        chatbot = Chatbot(match_no)
+        response = chatbot.handle_query(player1_id, player2_id, user_query)
+
+        return jsonify(response), 200
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 400

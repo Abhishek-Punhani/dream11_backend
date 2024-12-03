@@ -1,19 +1,24 @@
 import requests
 import pandas as pd
 import numpy as np
+import json
 
 def update_csv(file_path, output_path, api_url):
     try:
         # Step 1: Read the existing CSV
         df = pd.read_csv(file_path)
-        # Add a new column for storing JSON response if it doesn't exist
-        if 'ai_alerts' not in df.columns:
-            df['ai_alerts'] = np.nan
+        
+        # Delete the 'values' column if it exists
+        if 'values' in df.columns:
+            df.drop(columns=['values'], inplace=True)
+        
+        # Add a new column for storing JSON response and initialize with NaN
+        df['values'] = np.nan
 
         # Step 2: Loop through each player in the DataFrame and make a POST request
         for index, row in df.iterrows():
             player_id = row['player_id']  # Ensure your CSV has a 'player_id' column
-            post_data = {"player_id": player_id,"match_no":1}
+            post_data = {"player_id": player_id, "match_no": 3}
             
             try:
                 print(f"\nProcessing player {player_id}...")
@@ -24,7 +29,7 @@ def update_csv(file_path, output_path, api_url):
                 player_data = response.json()  # Parse the response
                 
                 # Add the JSON response to the 'values' column
-                df.at[index, 'ai_alerts'] = str(player_data)  # Store as string to avoid DataFrame issues
+                df.at[index, 'values'] = json.dumps(player_data)  # Store as JSON string
                 
                 print(f"Successfully processed player {player_id}")
                 
@@ -43,3 +48,9 @@ def update_csv(file_path, output_path, api_url):
         print(f"Error: {str(e)}")
         raise
 
+if __name__ == "__main__":
+    update_csv(
+        '/home/manav/dev_ws/src/Dream11BE/prod_features/data/file_3.csv',
+        '/home/manav/dev_ws/src/Dream11BE/prod_features/data/updated/fike_3.csv',
+        'http://127.0.0.1:5000/api/user_data', 
+    )
