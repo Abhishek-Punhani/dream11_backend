@@ -12,3 +12,11 @@ beautifulsoup4
 python-dotenv
 joblib
 langchain
+pyspellchecker
+langchain_huggingface
+langchain_spacy
+langchain_transformers
+langchain_sentence_transformers
+langchain_torch
+matplotlib
+seaborn

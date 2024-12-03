@@ -144,7 +144,7 @@ class Chatbot:
                 # Handle AI alert comparison
                 player1_alerts = self.player_data[self.player_data['player_id'] == self.player1_id]['ai_alerts'].values[0]
                 player2_alerts = self.player_data[self.player_data['player_id'] == self.player2_id]['ai_alerts'].values[0]
-                response = f"Player 1 AI Alerts: {player1_alerts}\nPlayer 2 AI Alerts: {player2_alerts}"
+                response = f"Player 1 AI Alerts: {player1_alerts}\nPlayer 2 AI Alerts: {player2_alerts}\n\nI'm a cricket chatbot. Please ask relevant questions."
                 return recognized_intent, response.strip()
 
             metric_value1, metric_value2 = self.get_metric_values(recognized_intent)
@@ -159,7 +159,8 @@ class Chatbot:
                     "metric_value2": metric_value2
                 }
                 response = compare_metric_chain.invoke(chain_inputs)
-                return recognized_intent, response.strip()
+                summary = f"{self.player1_name} has a {metric_name_display} of {metric_value1}, while {self.player2_name} has a {metric_name_display} of {metric_value2}. Based on this metric, {'player1' if metric_value1 > metric_value2 else 'player2'} is better."
+                return recognized_intent, f"{response.strip()}\n\nSummary: {summary}"
             else:
                 return recognized_intent, f"Data for {metric_name_display} is not available for comparison."
         elif action == 'explain':
@@ -186,4 +187,4 @@ class Chatbot:
         else:
             # Handle general queries
             response = llm.invoke(user_query)
-            return {"response": response.strip()}
+            return {"response": f"{response.strip()}\n\nI'm a cricket chatbot. Please ask relevant questions."}

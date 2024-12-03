@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModel
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
-
+from spellchecker import SpellChecker
 
 class IntentRecognizer:
     def __init__(self):
@@ -50,6 +50,7 @@ class IntentRecognizer:
 
         # Initialize the tokenizer and model
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.spell = SpellChecker()
 
         # Precompute embeddings
         self.intent_embeddings = {
@@ -67,10 +68,18 @@ class IntentRecognizer:
         normalized_query = user_query.lower()
         return self.intent_synonyms.get(normalized_query, None)
 
+    def correct_spelling(self, user_query):
+        """Correct spelling in the user query."""
+        corrected_query = " ".join([self.spell.correction(word) for word in user_query.split()])
+        return corrected_query
+
     def recognize_intent(self, user_query):
         """
         Recognize the intent from the user query using either normalization or embeddings.
         """
+        # Correct spelling in the user query
+        user_query = self.correct_spelling(user_query)
+
         # First attempt: Normalize query using synonyms
         normalized_intent = self.normalize_query(user_query)
         if normalized_intent:
