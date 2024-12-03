@@ -49,7 +49,6 @@ class IntentRecognizer:
         }
 
         # Initialize the tokenizer and model
-        # self.tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
 
         # Precompute embeddings
@@ -57,7 +56,6 @@ class IntentRecognizer:
             intent: self.get_embedding(description)
             for intent, description in self.intents.items()
         }
-            
             
     def get_embedding(self, text):
         """Generate an embedding for a given text."""

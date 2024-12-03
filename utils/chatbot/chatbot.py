@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import json
 from utils.chatbot.intent_recognizer import IntentRecognizer
 from langchain_huggingface import HuggingFaceEndpoint
 from langchain.prompts import PromptTemplate
@@ -16,9 +17,9 @@ os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 
 # Initialize the LLM
 llm = HuggingFaceEndpoint(
-    repo_id="meta-llama/Llama-3.2-1B-Instruct",  
-    temperature=0.7,  
-    model_kwargs={"max_length": 512},  
+    repo_id="meta-llama/Llama-3.2-1B-Instruct",
+    temperature=0.8,
+    model_kwargs={"max_length": 50},
     huggingfacehub_api_token=sec_key
 )
 
@@ -35,7 +36,7 @@ Answer:
 )
 
 compare_metric_prompt = PromptTemplate(
-     input_variables=["player1_name", "player2_name", "metric_name", "metric_meaning", "metric_value1", "metric_value2"],
+    input_variables=["player1_name", "player2_name", "metric_name", "metric_meaning", "metric_value1", "metric_value2"],
     template="""
 You are a cricket analyst assistant.
 
@@ -72,9 +73,14 @@ metric_meanings = {
 }
 
 class Chatbot:
-    def __init__(self, match_no):
-        file_path = f"./prod_features/data/updated/file_{match_no}_modified.csv"
-        self.player_data = pd.read_csv(file_path, dtype={'player_id': str})
+    def __init__(self, match_no=None):
+        self.match_no = match_no
+        if match_no:
+            file_path = f"./data/file_{match_no}_modified.csv"
+            self.player_data = pd.read_csv(file_path, dtype={'player_id': str})
+            self.player_data['ai_alerts'] = self.player_data['ai_alerts'].apply(lambda x: json.loads(x.replace('""', '"')))
+        else:
+            self.player_data = None
         self.intent_recognizer = IntentRecognizer()
         self.player1_id = None
         self.player1_name = None
@@ -99,7 +105,7 @@ class Chatbot:
         self.player2_name = player2_row['player'].values[0]
 
         return True
-    
+
     def get_metric_values(self, metric_name):
         player1_row = self.player_data[self.player_data['player_id'] == self.player1_id]
         player2_row = self.player_data[self.player_data['player_id'] == self.player2_id]
@@ -111,13 +117,14 @@ class Chatbot:
             return metric_value1, metric_value2
         else:
             return None, None
+
     def process_user_query(self, user_query):
         recognized_intent = self.intent_recognizer.recognize_intent(user_query)
         if recognized_intent == 'exit':
             return 'exit', None
 
         if recognized_intent is None:
-            return None, "I'm sorry, I didn't understand that."
+            return None, "I'm sorry, I didn't understand that. I'm a cricket chatbot. Please ask a relevant cricket-related question."
 
         # Check if the user is asking for an explanation
         explanation_keywords = ['meaning', 'mean', 'explain', 'definition', 'what is']
@@ -125,11 +132,21 @@ class Chatbot:
             action = 'explain'
         else:
             action = 'compare'
+
         # Use intent for data access and metric_name_display for user-friendly output
         metric_name_display = recognized_intent.replace('_', ' ')
+
         # Get metric meaning
         metric_meaning = metric_meanings.get(recognized_intent, 'No explanation available.')
+
         if action == 'compare':
+            if recognized_intent == 'ai_alert':
+                # Handle AI alert comparison
+                player1_alerts = self.player_data[self.player_data['player_id'] == self.player1_id]['ai_alerts'].values[0]
+                player2_alerts = self.player_data[self.player_data['player_id'] == self.player2_id]['ai_alerts'].values[0]
+                response = f"Player 1 AI Alerts: {player1_alerts}\nPlayer 2 AI Alerts: {player2_alerts}"
+                return recognized_intent, response.strip()
+
             metric_value1, metric_value2 = self.get_metric_values(recognized_intent)
             if metric_value1 is not None and metric_value2 is not None:
                 # Prepare inputs for the chain
@@ -153,16 +170,20 @@ class Chatbot:
             response = explain_metric_chain.invoke(chain_inputs)
             return recognized_intent, response.strip()
         else:
-            return None, "Could be more specific or elaborate more on your cricket player comparison related query."
+            return None, "Could you please be more specific or elaborate more on your cricket player comparison related query?"
 
+    def handle_query(self, player1_id=None, player2_id=None, user_query=None):
+        if player1_id and player2_id and self.match_no:
+            if not self.set_players(player1_id, player2_id):
+                return {"error": "Failed to set players. Please check the player IDs."}
 
-    def handle_query(self, player1_id, player2_id, user_query):
-        if not self.set_players(player1_id, player2_id):
-            return{"error": "Failed to set players. Please check the player IDs."}
-
-        intent, response = self.process_user_query(user_query)
-        if intent == 'exit':
-            return {"response": "Goodbye!"}
-        if response:
-            return {"response": response}
-        return {"response": "I'm sorry, I didn't understand that."}
+            intent, response = self.process_user_query(user_query)
+            if intent == 'exit':
+                return {"response": "Goodbye!"}
+            if response:
+                return {"response": response}
+            return {"response": "I'm sorry, I didn't understand that."}
+        else:
+            # Handle general queries
+            response = llm.invoke(user_query)
+            return {"response": response.strip()}
