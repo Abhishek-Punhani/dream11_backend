@@ -53,8 +53,31 @@ Answer:
 """
 )
 
+general_prompt = PromptTemplate(
+    input_variables=["question"],
+    template="""
+You are a chatbot specialized in answering cricket-related questions.
+
+Question: {question}
+Answer:
+"""
+)
+
+data_prompt = PromptTemplate(
+    input_variables=["question", "data"],
+    template="""
+You are a chatbot specialized in answering cricket-related questions.
+
+Question: {question}
+
+Answer the query based on the data {data}
+"""
+)
+
 compare_metric_chain = compare_metric_prompt | llm
 explain_metric_chain = explain_metric_prompt | llm
+general_chain = general_prompt | llm
+data_chain = data_prompt | llm
 
 # Metric meanings dictionary
 metric_meanings = {
@@ -183,8 +206,16 @@ class Chatbot:
                 return {"response": "Goodbye!"}
             if response:
                 return {"response": response}
-            return {"response": "I'm sorry, I didn't understand that."}
+            
+            # If intent is None or response is not generated
+            player1_data = self.player_data[self.player_data['player_id'] == self.player1_id].to_dict(orient='records')[0]
+            player2_data = self.player_data[self.player_data['player_id'] == self.player2_id].to_dict(orient='records')[0]
+            data = {"player1_data": player1_data, "player2_data": player2_data}
+            response = data_chain.invoke({"question": user_query, "data": json.dumps(data)})
+            return {"response": response.strip()}
         else:
             # Handle general queries
-            response = llm.invoke(user_query)
+            if user_query.lower() in ["hi", "hello"]:
+                return {"response": "Hi, how can I help you?"}
+            response = general_chain.invoke({"question": user_query})
             return {"response": f"{response.strip()}\n\nI'm a cricket chatbot. Please ask relevant questions."}
