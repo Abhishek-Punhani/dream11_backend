@@ -1,5 +1,6 @@
 from flask import jsonify, request
 import pandas as pd
+import polars as pl
 import numpy as np
 from prod_features.model.predict_model import predict_model
 from prod_features.functionalities.features import (
@@ -171,3 +172,136 @@ def generate_team_names_route():
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
+    
+
+def generate_fantasy_points_data(filtered_df, player_id):
+    # Ensure the required columns are present
+    required_columns = ['start_date', 'floor', 'ceiling', 'batting_first_fp', 'chasing_fp']
+    for col in required_columns:
+        if col not in filtered_df.columns:
+            raise ValueError(f"Column '{col}' not found in the DataFrame")
+
+    # Convert start_date to string to ensure JSON serializability
+    filtered_df = filtered_df.with_columns(
+        pl.col('start_date').cast(pl.Utf8)
+    )
+
+    return pd.DataFrame({
+        'start_date': filtered_df['start_date'].to_list(),
+        'floor': filtered_df['floor'].to_list(),
+        'ceiling': filtered_df['ceiling'].to_list(),
+        'batting_first_fp': filtered_df['batting_first_fp'].to_list(),
+        'chasing_fp': filtered_df['chasing_fp'].to_list()
+    })
+
+def determine_batting_order(df):
+    # Determine batting order based on 'win_by_run' and 'win_by_wickets'
+    df = df.with_columns(
+        pl.when(pl.col('win_by_run') > 0)
+        .then(pl.lit('Batting First'))
+        .when(pl.col('win_by_wickets') > 0)
+        .then(pl.lit('Chasing'))
+        .otherwise(pl.lit('Unknown'))
+        .alias('batting_order')
+    )
+    return df
+
+def calculate_metrics(df):
+    window_size = 3
+
+    # Calculate rolling average and standard deviation
+    df = df.with_columns([
+        pl.col("Dream11_Points").rolling_mean(window_size).alias("Rolling_Avg"),
+        pl.col("Dream11_Points").rolling_std(window_size).alias("Rolling_Std")
+    ])
+
+    # Calculate floor and ceiling
+    df = df.with_columns([
+        (pl.col("Rolling_Avg") - 1.96 * pl.col("Rolling_Std")).alias("floor"),
+        (pl.col("Rolling_Avg") + 1.96 * pl.col("Rolling_Std")).alias("ceiling")
+    ])
+
+    # Create conditional columns for Batting First and Chasing Fantasy Points
+    df = df.with_columns([
+        pl.when(pl.col("batting_order") == "Batting First")
+        .then(pl.col("Dream11_Points"))
+        .otherwise(pl.lit(0))
+        .alias("Batting_First_Dream11_Points"),
+        
+        pl.when(pl.col("batting_order") == "Chasing")
+        .then(pl.col("Dream11_Points"))
+        .otherwise(pl.lit(0))
+        .alias("Chasing_Dream11_Points")
+    ])
+
+    # Calculate rolling sums for Batting First Fantasy Points
+    df = df.with_columns([
+        pl.col("Batting_First_Dream11_Points").rolling_sum(window_size).alias("batting_first_fp"),
+        pl.col("Chasing_Dream11_Points").rolling_sum(window_size).alias("chasing_fp")
+    ])
+
+    return df
+
+def get_fantasy_points():
+    data = request.get_json()
+    player_id = data.get('player_id')
+
+    # Define the dataset path
+    dataset_path = r'/home/manav/dev_ws/src/dream11_backend/filtered_dataset.csv'  # Update this path as needed
+
+    # Step 2: Load the dataset
+    try:
+        df = pl.read_csv(dataset_path)
+    except FileNotFoundError:
+        return jsonify({"error": f"The file '{dataset_path}' was not found."}), 404
+    except Exception as e:
+        return jsonify({"error": f"An error occurred while reading the CSV file: {e}"}), 500
+
+    # Step 3: Parse 'start_date' column to datetime
+    if 'start_date' in df.columns:
+        try:
+            df = df.with_columns(
+                pl.col("start_date").str.strptime(pl.Date, "%Y-%m-%d").alias("start_date")
+            )
+        except Exception as e:
+            return jsonify({"error": f"Error parsing 'start_date': {e}"}), 500
+    else:
+        return jsonify({"error": "'start_date' column not found in the dataset."}), 400
+
+    # Step 4: Filter the DataFrame based on player_id (case-insensitive)
+    filtered_df = df.filter(pl.col('player_id') == player_id)
+
+    if filtered_df.is_empty():
+        return jsonify({"error": f"No data found for the specified Player ID '{player_id}'. Please check the ID and try again."}), 404
+
+    # Step 5: Sort by start_date
+    filtered_df = filtered_df.sort('start_date')
+
+    # Step 6: Determine batting order
+    filtered_df = determine_batting_order(filtered_df)
+
+    # Step 7: Calculate metrics
+    filtered_df = calculate_metrics(filtered_df)
+
+    # Step 8: Generate Fantasy Points metrics data
+    data_points = generate_fantasy_points_data(filtered_df, player_id)
+
+    # Step 9: Check if data_points is not empty
+    if not data_points.empty:
+        # Add player_id and player_name to the data points
+       
+        data_points['player_id'] = player_id
+       
+        # Convert to JSON response with arrays for the metrics
+        response = {
+           
+            "player_id": player_id,
+            "start_date": data_points['start_date'].tolist(),
+            "floor": data_points['floor'].tolist(),
+            "ceiling": data_points['ceiling'].tolist(),
+            "batting_first_fp": data_points['batting_first_fp'].tolist(),
+            "chasing_fp": data_points['chasing_fp'].tolist()
+        }
+        return jsonify(response), 200
+    else:
+        return jsonify({"error": f"No data to display for player ID '{player_id}'."}), 404
