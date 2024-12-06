@@ -21,3 +21,4 @@ langchain_torch
 matplotlib
 seaborn
 xgboost
+polars
