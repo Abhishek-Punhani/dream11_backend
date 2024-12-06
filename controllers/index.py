@@ -7,7 +7,7 @@ from prod_features.functionalities.features import (
     batting_strike_rate, bowling_economy, pitch_score, floor, ceil,
     batting_first_fantasy_points, chasing_first_fantasy_points,
     relative_points, matchup_rank, six_match_prediction,
-     team_spider_chart
+     team_spider_chart,risk_assesment
 )
 from utils.chatbot.chatbot import Chatbot
 from utils.names import generate_team_names
@@ -28,6 +28,7 @@ def user_data():
         
         # Get all values
         (y_pred_sorted, dream_team_points) = predict_model(df_copy, 'match_predictions', '')
+        print("hehehehhhe",dream_team_points)
         team1 = y_pred_sorted[:11]
         team2 = y_pred_sorted[11:]
         temp = float(dream_team_points) if isinstance(dream_team_points, (np.floating, np.integer)) else dream_team_points
@@ -43,8 +44,7 @@ def user_data():
         (y_actual, y_pred, date_of_match) = six_match_prediction(df)
         pfpp = float(dream_team_points / 11)  # Convert numpy.float64 to Python float
         (fes, doi, pcb) = team_spider_chart(df_copy, team1, dream_team_points)
-        
-        # Convert numpy numeric types to Python native types
+       
         fes = int(fes) if isinstance(fes, np.integer) else fes
         doi = float(doi) if isinstance(doi, np.floating) else doi
         pcb = float(pcb) if isinstance(pcb, np.floating) else pcb
@@ -70,7 +70,8 @@ def user_data():
             "pfpp": pfpp,
             "fes": fes,
             "doi": doi,
-            "pcb": pcb
+            "pcb": pcb,
+          
         }
 
        
