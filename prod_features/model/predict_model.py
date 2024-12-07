@@ -286,6 +286,8 @@ def predict_model(df, str, player_id):
     
     elif str=='match_predictions':
         # Rename columns for consistency
+        df_copy=df
+
         df = df[['match_type', 'player_id', 'start_date', 'team', 'opponent', 'venue',
                  'gender']].rename(
             columns={'start_date': 'ds'}
@@ -339,5 +341,6 @@ def predict_model(df, str, player_id):
             else:
                 break
     
-    
-    return (y_pred_sorted,dream_team_points_predicted)
+            df_copy['mod_id']=X['player_id']
+            df_copy=df_copy[['mod_id','player_id']]
+    return (y_pred_sorted,dream_team_points_predicted , df_copy)

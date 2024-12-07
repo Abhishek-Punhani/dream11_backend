@@ -22,13 +22,16 @@ def user_data():
         # file_id = "1AuHiJyQF5P2YNgECfMykHaCVOVdUR32z"
         # url = f"https://drive.google.com/uc?id={file_id}"
         url=f"./prod_features/data/file_{match_no}.csv"
+        url2=f"./prod_features/data/full_dataset.csv"
         df = pd.read_csv(url)
+        df = df[['player', 'player_id', 'team', 'opponent', 'start_date', 'end_date', 'venue', 'match_type', 'is_captain', 'is_player_of_match', 'runs_scored', 'balls_faced', 'outs', 'fours', 'sixes', 'runs_conceded', 'balls_bowled', 'wickets', 'catches', 'stumpings', 'runouts', 'wickets_taken_players', 'dismissed_by', 'wicket_type', 'runs_powerplay', 'fours_powerplay', 'sixes_powerplay', 'wickets_powerplay', 'runs_middle', 'fours_middle', 'sixes_middle', 'wickets_middle', 'runs_death', 'fours_death', 'sixes_death', 'wickets_death', 'win', 'win_by_run', 'win_by_wickets', 'maidens', 'gender', 'batting_average', 'batting_strike_rate', 'bowling_average', 'bowling_strike_rate', 'bowling_economy']]
+       
         df_copy = df.copy()
+        df_copy_risk=pd.read_csv(url2)
         df = df[df['player_id'] == player_id]
         
         # Get all values
-        (y_pred_sorted, dream_team_points) = predict_model(df_copy, 'match_predictions', '')
-        print("hehehehhhe",dream_team_points)
+        (y_pred_sorted, dream_team_points,mod_player_id) = predict_model(df_copy, 'match_predictions', '')
         team1 = y_pred_sorted[:11]
         team2 = y_pred_sorted[11:]
         temp = float(dream_team_points) if isinstance(dream_team_points, (np.floating, np.integer)) else dream_team_points
@@ -48,6 +51,9 @@ def user_data():
         fes = int(fes) if isinstance(fes, np.integer) else fes
         doi = float(doi) if isinstance(doi, np.floating) else doi
         pcb = float(pcb) if isinstance(pcb, np.floating) else pcb
+        risk=int(risk_assesment(df_copy_risk,player_id))
+        venue=df['venue'].iloc[0]
+        
 
         response = {
             "strike_rate": strike_rate.tolist() if isinstance(strike_rate, (np.ndarray, pd.Series)) else float(strike_rate),
@@ -63,6 +69,7 @@ def user_data():
             "rank": rank.tolist() if isinstance(rank, (np.ndarray, pd.Series)) else float(rank),
             "y_actual": y_actual.tolist() if isinstance(y_actual, (np.ndarray, pd.Series)) else y_actual,
             "y_pred": y_pred.tolist() if isinstance(y_pred, (np.ndarray, pd.Series)) else y_pred,
+            "mod_player_id": mod_player_id.to_dict('records') if isinstance(mod_player_id, pd.DataFrame) else [{'player_id': int(t[0]), 'y': float(t[1])} for t in mod_player_id] if isinstance(mod_player_id, np.ndarray) else mod_player_id,
             "date_of_match": [str(d) for d in date_of_match] if isinstance(date_of_match, (list, np.ndarray, pd.Series)) else str(date_of_match),
             "team1": team1.to_dict('records') if isinstance(team1, pd.DataFrame) else [{'player_id': int(t[0]), 'y': float(t[1])} for t in team1] if isinstance(team1, np.ndarray) else team1,
             "team2": team2.to_dict('records') if isinstance(team2, pd.DataFrame) else [{'player_id': int(t[0]), 'y': float(t[1])} for t in team2] if isinstance(team2, np.ndarray) else team2,
@@ -71,6 +78,8 @@ def user_data():
             "fes": fes,
             "doi": doi,
             "pcb": pcb,
+            "risk":risk,
+            "venue":venue
           
         }
 

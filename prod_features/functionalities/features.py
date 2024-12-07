@@ -176,6 +176,10 @@ def team_spider_chart(df,team1,dream_team_points):
 
 def risk_assesment(df, player_id):
     # Create a new column 'risk' in the DataFrame
+    df=scores(df)
+    df=df.fillna(0)
     df = df[df['player_id']==player_id]
-    risk = int(df['Dream11_Points'].std())
+    risk = (df['score'].std())
+    if pd.isna(risk):
+        return -1
     return risk if risk < 100 else 100
