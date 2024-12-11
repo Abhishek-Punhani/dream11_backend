@@ -123,7 +123,7 @@ def user_data(team1, team2, date, player_id):
             "batting_first_predicted_score": batting_first_predicted_score.tolist() if isinstance(batting_first_predicted_score, (np.ndarray, pd.Series)) else float(batting_first_predicted_score),
             "chasing_first_original_score": chasing_first_original_score.tolist() if isinstance(chasing_first_original_score, (np.ndarray, pd.Series)) else float(chasing_first_original_score),
             "chasing_first_predicted_score": chasing_first_predicted_score.tolist() if isinstance(chasing_first_predicted_score, (np.ndarray, pd.Series)) else float(chasing_first_predicted_score),
-            "points": points.tolist() if isinstance(points, (np.ndarray, pd.Series)) elif float(points) else 42,
+            "points": points.tolist() if isinstance(points, (np.ndarray, pd.Series)) else float(points) if points else 42,
             "rank": rank.tolist() if isinstance(rank, (np.ndarray, pd.Series)) else float(rank),
             "y_actual": y_actual.tolist() if isinstance(y_actual, (np.ndarray, pd.Series)) else y_actual,
             "y_pred": y_pred.tolist() if isinstance(y_pred, (np.ndarray, pd.Series)) else y_pred,
