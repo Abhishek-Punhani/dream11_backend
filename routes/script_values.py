@@ -11,24 +11,24 @@ def update_csv(file_path, output_path, api_url):
         print("Initial DataFrame structure:")
         print(df.head())
 
-        df1=pd.read_csv('/home/manav/dev_ws/src/dream11_backend/data/New/file_1.csv')
+        # df1=pd.read_csv('/home/manav/dev_ws/src/dream11_backend/data/New/file_1.csv')
 
         
         # Delete the 'values' column if it exists
         if 'values' in df.columns:
             df.drop(columns=['values'], inplace=True)
 
-        if 'y_predicted' in df.columns:
-            df.drop(columns=['y_predicted'], inplace=True)
+        # if 'y_predicted' in df.columns:
+        #     df.drop(columns=['y_predicted'], inplace=True)
         
         # Add a new column for storing JSON response and initialize with NaN
         df['values'] = np.nan
-        df['y_predicted'] = np.nan
+        # df['y_predicted'] = np.nan
 
         # Step 2: Loop through each player in the DataFrame and make a POST request
         for index, row in df.iterrows():
             player_id = row['player_id']  # Ensure your CSV has a 'player_id' column
-            post_data = {"player_id": player_id, "match_no": 4}
+            post_data = {"player_id": player_id, "match_no": 6}
             
             try:
                 print(f"\nProcessing player {player_id}...")
@@ -42,7 +42,7 @@ def update_csv(file_path, output_path, api_url):
                 
                 # Add the JSON response to the 'values' column
                 df.at[index, 'values'] = json.dumps(player_data)  # Store as JSON string
-                df.at[index, 'y_predicted'] = df1['y_pred']
+                # df.at[index, 'y_predicted'] = df1['y_pred']
                 
                 print(f"Successfully processed player {player_id}")
                 
@@ -65,7 +65,7 @@ def update_csv(file_path, output_path, api_url):
 
 if __name__ == "__main__":
     update_csv(
-        '/home/manav/dev_ws/src/dream11_backend/prod_features/data/file_4.csv',
-        '/home/manav/dev_ws/src/dream11_backend/data/file_4_final.csv',
+        '/home/manav/dev_ws/src/dream11_backend/prod_features/data/file_6.csv',
+        '/home/manav/dev_ws/src/dream11_backend/data/file_6_final.csv',
         'http://127.0.0.1:5000/api/user_data', 
     )

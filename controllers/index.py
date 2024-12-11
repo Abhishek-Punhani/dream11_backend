@@ -18,43 +18,67 @@ def user_data():
     try:
         data = request.get_json()
         player_id = data.get("player_id")
-        match_no = data.get("match_no")
-        # file_id = "1AuHiJyQF5P2YNgECfMykHaCVOVdUR32z"
-        # url = f"https://drive.google.com/uc?id={file_id}"
-        url=f"./prod_features/data/file_{match_no}.csv"
-        url2=f"./prod_features/data/full_dataset.csv"
-        df = pd.read_csv(url)
+        team1=data.get("team1")
+        team2=data.get("team2")
+        date=data.get("date")
+        url=f"./prod_features/data/full_dataset.csv"
+        df=pd.read_csv(url)
+        df=df[(df['team']==team1) | (df['team']==team2)]
+        df=df[df['start_date']==date]
+        print("Initial DataFrame structure:")
+        print(df.head())
+
         df = df[['player', 'player_id', 'team', 'opponent', 'start_date', 'end_date', 'venue', 'match_type', 'is_captain', 'is_player_of_match', 'runs_scored', 'balls_faced', 'outs', 'fours', 'sixes', 'runs_conceded', 'balls_bowled', 'wickets', 'catches', 'stumpings', 'runouts', 'wickets_taken_players', 'dismissed_by', 'wicket_type', 'runs_powerplay', 'fours_powerplay', 'sixes_powerplay', 'wickets_powerplay', 'runs_middle', 'fours_middle', 'sixes_middle', 'wickets_middle', 'runs_death', 'fours_death', 'sixes_death', 'wickets_death', 'win', 'win_by_run', 'win_by_wickets', 'maidens', 'gender', 'batting_average', 'batting_strike_rate', 'bowling_average', 'bowling_strike_rate', 'bowling_economy']]
        
         df_copy = df.copy()
-        df_copy_risk=pd.read_csv(url2)
+        df_copy_risk=pd.read_csv(url)
         df = df[df['player_id'] == player_id]
         
-        # Get all values
-        (y_pred_sorted, dream_team_points,mod_player_id) = predict_model(df_copy, 'match_predictions', '')
+        (y_pred_sorted, dream_team_points, mod_player_id) = predict_model(df_copy, 'match_predictions', '')
+        print("Predicted sorted values:", y_pred_sorted)
+        print("Dream team points:", dream_team_points)
+        print("Mod player ID:", mod_player_id)
+        
         team1 = y_pred_sorted[:11]
         team2 = y_pred_sorted[11:]
         temp = float(dream_team_points) if isinstance(dream_team_points, (np.floating, np.integer)) else dream_team_points
         strike_rate = batting_strike_rate(df)
+        print("Strike rate:", strike_rate)
         economy = bowling_economy(df)
+        print("Economy:", economy)
         score = float(pitch_score(player_id, df['venue'].iloc[0]))
+        print("Score:", score)
         floor_value = float(floor(player_id))
+        print("Floor value:", floor_value)
         ceil_value = float(ceil(player_id))
+        print("Ceil value:", ceil_value)
         (batting_first_original_score, batting_first_predicted_score) = batting_first_fantasy_points(player_id, df)
+        print("Batting first original score:", batting_first_original_score)
+        print("Batting first predicted score:", batting_first_predicted_score)
         (chasing_first_original_score, chasing_first_predicted_score) = chasing_first_fantasy_points(player_id, df)
+        print("Chasing first original score:", chasing_first_original_score)
+        print("Chasing first predicted score:", chasing_first_predicted_score)
         points = relative_points(df_copy, player_id)
+        print("Points:", points)
         rank = matchup_rank(df_copy, player_id)
+        print("Rank:", rank)
         (y_actual, y_pred, date_of_match) = six_match_prediction(df)
-        pfpp = float(dream_team_points / 11)  # Convert numpy.float64 to Python float
-        (fes, doi, pcb) = team_spider_chart(df_copy, team1, dream_team_points)
-       
-        fes = int(fes) if isinstance(fes, np.integer) else fes
-        doi = float(doi) if isinstance(doi, np.floating) else doi
-        pcb = float(pcb) if isinstance(pcb, np.floating) else pcb
-        risk=int(risk_assesment(df_copy_risk,player_id))
-        venue=df['venue'].iloc[0]
+        print("Y actual:", y_actual)
+        print("Y pred:", y_pred)
+        print("Date of match:", date_of_match)
+        # pfpp = float(dream_team_points / 11)  # Convert numpy.float64 to Python float
+        # (fes, doi, pcb) = team_spider_chart(df_copy, team1, dream_team_points)
+        # print("FES:", fes)
+        # print("DOI:", doi)
+        # print("PCB:", pcb)
         
-
+        # fes = int(fes) if isinstance(fes, np.integer) else fes
+        # doi = float(doi) if isinstance(doi, np.floating) else doi
+        # pcb = float(pcb) if isinstance(pcb, np.floating) else pcb
+        risk = int(risk_assesment(df_copy_risk, player_id))
+        print("Risk:", risk)
+        venue = df['venue'].iloc[0]
+        print("Venue:", venue)
         response = {
             "strike_rate": strike_rate.tolist() if isinstance(strike_rate, (np.ndarray, pd.Series)) else float(strike_rate),
             "economy": economy.tolist() if isinstance(economy, (np.ndarray, pd.Series)) else float(economy),
@@ -74,16 +98,16 @@ def user_data():
             "team1": team1.to_dict('records') if isinstance(team1, pd.DataFrame) else [{'player_id': int(t[0]), 'y': float(t[1])} for t in team1] if isinstance(team1, np.ndarray) else team1,
             "team2": team2.to_dict('records') if isinstance(team2, pd.DataFrame) else [{'player_id': int(t[0]), 'y': float(t[1])} for t in team2] if isinstance(team2, np.ndarray) else team2,
             "temp": temp,
-            "pfpp": pfpp,
-            "fes": fes,
-            "doi": doi,
-            "pcb": pcb,
+            # "pfpp": pfpp,
+            # "fes": fes,
+            # "doi": doi,
+            # "pcb": pcb,
             "risk":risk,
             "venue":venue
           
         }
 
-       
+        print(response)
         return jsonify(response), 200
         
     except Exception as e:
@@ -95,11 +119,15 @@ def ai_alert():
     try:
         data = request.get_json()
         player_id = data.get("player_id")
-        match_no = data.get("match_no")
-
-        # Read the CSV file based on match_no
-        file_path = f"./prod_features/data/file_{match_no}.csv"
-        df = pd.read_csv(file_path)
+        team1=data.get("team1")
+        team2=data.get("team2")
+        date=data.get("date")
+        url=f"./prod_features/data/full_dataset.csv"
+        df=pd.read_csv(url)
+        df=df[(df['team']==team1) | (df['team']==team2)]
+        df=df[df['start_date']==date]
+        print("Initial DataFrame structure:")
+        print(df.head())
 
         # Extract the player name using player_id
         player_row = df[df['player_id'] == player_id]
@@ -110,7 +138,7 @@ def ai_alert():
         print(player_name)
 
         # Read the set.csv file to get key_cricinfo
-        set_file_path = "./prod_features/data/set.csv"
+        set_file_path = "./prod_features/data/full_dataset.csv"
         set_df = pd.read_csv(set_file_path)
 
         # Extract key_cricinfo using player_id
@@ -163,14 +191,14 @@ def chatbot():
         user_query = data.get("user_query")
         match_no = data.get("match_no")
 
-        if match_no:
-            chatbot = Chatbot(match_no)
-        else:
-            chatbot = Chatbot()
+        # if match_no:
+        #     chatbot = Chatbot(match_no)
+        # else:
+        #     chatbot = Chatbot()
 
-        response = chatbot.handle_query(player1_id, player2_id, user_query)
+        # response = chatbot.handle_query(player1_id, player2_id, user_query)
 
-        return jsonify(response), 200
+        # return jsonify(response), 200
      except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -315,3 +343,4 @@ def get_fantasy_points():
         return jsonify(response), 200
     else:
         return jsonify({"error": f"No data to display for player ID '{player_id}'."}), 404
+

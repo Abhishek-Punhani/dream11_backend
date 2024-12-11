@@ -342,5 +342,4 @@ def predict_model(df, str, player_id):
                 break
     
             df_copy['mod_id']=X['player_id']
-            df_copy=df_copy[['mod_id','player_id']]
-    return (y_pred_sorted,dream_team_points_predicted , df_copy)
+    return (y_pred_sorted,dream_team_points_predicted , df_copy[['mod_id','player_id']])

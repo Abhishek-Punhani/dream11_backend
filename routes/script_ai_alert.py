@@ -16,7 +16,7 @@ def update_csv(file_path, output_path, api_url):
         # Step 2: Loop through each player in the DataFrame and make a POST request
         for index, row in df.iterrows():
             player_id = row['player_id']  # Ensure your CSV has a 'player_id' column
-            post_data = {"player_id": player_id,"match_no":1}
+            post_data = {"player_id": player_id,"match_no":6}
             
             try:
                 print(f"\nProcessing player {player_id}...")
@@ -48,7 +48,7 @@ def update_csv(file_path, output_path, api_url):
 
 if __name__ == "__main__":
     update_csv(
-        '/home/manav/dev_ws/src/Dream11BE/prod_features/data/updated/file_1.csv',
-        '/home/manav/dev_ws/src/Dream11BE/prod_features/data/updated/file_1_modified.csv',
+        '/home/manav/dev_ws/src/dream11_backend/data/file_6_final.csv',
+        '/home/manav/dev_ws/src/dream11_backend/data/New/file_6.csv',
         'http://127.0.0.1:5000/api/ai_alert', 
     )

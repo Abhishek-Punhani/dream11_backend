@@ -14,9 +14,6 @@ import joblib
 
 def train_model(df):
 
-    
-    
-    
     # ------------------ Data Preparation ------------------
     
     # Assume 'df' is your DataFrame loaded with data
@@ -24,9 +21,9 @@ def train_model(df):
     # df = pd.read_csv('your_data.csv')
     
     # Rename columns for consistency
-    df = df[['match_type','player_id', 'start_date', 'bowling_economy', 'team', 'opponent', 'venue',
+    df = df[['match_type','player_id', 'start_date', 'score', 'team', 'opponent', 'venue',
               'gender']].rename(
-        columns={'start_date': 'ds', 'bowling_economy': 'y'}
+        columns={'start_date': 'ds', 'score': 'y'}
     )
     
     # Convert 'ds' to datetime
@@ -45,7 +42,8 @@ def train_model(df):
         encoders[col] = encoder  # Store the encoder for future use
 
     # Specify the directory and filename to save the encoders
-    directory = r'C:\Users\anmol\prod_features\model_artifacts'  # Specify your desired directory
+    directory = os.path.join(os.path.dirname(__file__), 'model_artifacts')
+    os.makedirs(directory, exist_ok=True)
     encoders_path = os.path.join(directory, "label_encoders.joblib")
 
     # Save the encoders using joblib
@@ -80,11 +78,7 @@ def train_model(df):
     model.fit(X, y)
 
     # Specify the directory and filename
-    directory = r'C:\Users\anmol\prod_features\model_artifacts'  # Specify your desired directory
-    model_path = os.path.join(directory, "xgboost_bowling_economy.joblib")
+    model_path = os.path.join(directory, "xgboost_scores.joblib")
     
     # Save the model
     joblib.dump(model, model_path)
-
-
-

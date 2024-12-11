@@ -120,6 +120,7 @@ def six_match_prediction(df):
 
     # Step 1: Filter the DataFrame where date is less than the given target date
     filtered_df = df1[df1['start_date'] < target_date]
+    filtered_df=filtered_df[filtered_df['player_id']==player_id]
 
     # Step 2: Get the first 6 rows
     result_df = filtered_df.tail(6)
