@@ -4,6 +4,7 @@ import numpy as np
 import json
 import requests
 from flask import jsonify, request
+import concurrent.futures
 
 from prod_features.model.predict_model import predict_model
 from prod_features.functionalities.features import (
@@ -15,6 +16,17 @@ from prod_features.functionalities.features import (
 from utils.chatbot.chatbot import Chatbot
 from utils.names import generate_team_names
 from prod_features.functionalities.ai import CricInfoScraper, NewsScraper, process_multiple_headlines
+
+
+def process_player(player_id, team1, team2, date):
+    try:
+        user_data_response = user_data(team1, team2, date, player_id)
+        ai_alert_response = ai_alert(player_id, team1, team2, date)
+        return player_id, user_data_response, ai_alert_response
+    except Exception as e:
+        print(f"Error processing player {player_id}: {str(e)}")
+        return player_id, {"error": str(e)}, {"error": str(e)}
+
 
 def process_teams():
     data = request.get_json()
@@ -29,6 +41,8 @@ def process_teams():
     df = df[['player', 'player_id', 'team', 'opponent', 'start_date', 'end_date', 'venue', 'match_type', 'is_captain', 'is_player_of_match', 'runs_scored', 'balls_faced', 'outs', 'fours', 'sixes', 'runs_conceded', 'balls_bowled', 'wickets', 'catches', 'stumpings', 'runouts', 'wickets_taken_players', 'dismissed_by', 'wicket_type', 'runs_powerplay', 'fours_powerplay', 'sixes_powerplay', 'wickets_powerplay', 'runs_middle', 'fours_middle', 'sixes_middle', 'wickets_middle', 'runs_death', 'fours_death', 'sixes_death', 'wickets_death', 'win', 'win_by_run', 'win_by_wickets', 'maidens', 'gender', 'batting_average', 'batting_strike_rate', 'bowling_average', 'bowling_strike_rate', 'bowling_economy']]
     print("Initial DataFrame structure:")
     print(df.head())
+    output_path = '/home/manav/dev_ws/src/dream11_backend/data/New/file_6.csv'
+    output_path = f'/home/manav/dev_ws/src/dream11_backend/data/New/file_{team1}_{team2}_{date}.csv'
 
     if 'values' in df.columns:
         df.drop(columns=['values'], inplace=True)
@@ -37,29 +51,28 @@ def process_teams():
 
     df['values'] = np.nan
     df['ai_alerts'] = np.nan
+    
+    player_ids = df['player_id'].tolist()
 
-    for index, row in df.iterrows():
-        player_id = row['player_id']
-
-        try:
-            print(f"\nProcessing player {player_id}...")
-
-            user_data_response = user_data(team1, team2, date, player_id)
-            ai_alert_response = ai_alert(player_id, team1, team2, date)
-
-            df.at[index, 'values'] = json.dumps(user_data_response)
-            df.at[index, 'ai_alerts'] = json.dumps(ai_alert_response)
-            print(f"Successfully processed player {player_id}")
-        except Exception as e:
-            print(f"Error processing player {player_id}: {str(e)}")
-            continue
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        futures = {executor.submit(process_player, player_id, team1, team2, date): player_id for player_id in player_ids}
+        for future in concurrent.futures.as_completed(futures):
+            player_id = futures[future]
+            try:
+                player_id, user_data_response, ai_alert_response = future.result()
+                df.loc[df['player_id'] == player_id, 'values'] = json.dumps(user_data_response)
+                df.loc[df['player_id'] == player_id, 'ai_alerts'] = json.dumps(ai_alert_response)
+                print(f"Successfully processed player {player_id}")
+            except Exception as e:
+                print(f"Error processing player {player_id}: {str(e)}")
 
     print("Final DataFrame structure:")
     print(df.head())
-    output_path = '/home/manav/dev_ws/src/dream11_backend/data/New/file_6.csv'
     df.to_csv(output_path, index=False)
     print(f"\nUpdated CSV saved to {output_path}")
+
     return jsonify({"message": "Data processed successfully!"})
+
 
 def user_data(team1, team2, date, player_id):
     try:
@@ -81,8 +94,8 @@ def user_data(team1, team2, date, player_id):
         print("Dream team points:", dream_team_points)
         print("Mod player ID:", mod_player_id)
         
-        team1 = y_pred_sorted[:11]
-        team2 = y_pred_sorted[11:]
+        # team1 = y_pred_sorted[:11]
+        # team2 = y_pred_sorted[11:]
         temp = float(dream_team_points) if isinstance(dream_team_points, (np.floating, np.integer)) else dream_team_points
         strike_rate = batting_strike_rate(df)
         print("Strike rate:", strike_rate)
@@ -116,22 +129,20 @@ def user_data(team1, team2, date, player_id):
         response = {
             "strike_rate": strike_rate.tolist() if isinstance(strike_rate, (np.ndarray, pd.Series)) else float(strike_rate),
             "economy": economy.tolist() if isinstance(economy, (np.ndarray, pd.Series)) else float(economy),
-            "score": score,
+            "score": score if not np.isnan(score) else 42,
             "floor_value": floor_value,
             "ceil_value": ceil_value,
             "batting_first_original_score": batting_first_original_score.tolist() if isinstance(batting_first_original_score, (np.ndarray, pd.Series)) else float(batting_first_original_score),
             "batting_first_predicted_score": batting_first_predicted_score.tolist() if isinstance(batting_first_predicted_score, (np.ndarray, pd.Series)) else float(batting_first_predicted_score),
             "chasing_first_original_score": chasing_first_original_score.tolist() if isinstance(chasing_first_original_score, (np.ndarray, pd.Series)) else float(chasing_first_original_score),
             "chasing_first_predicted_score": chasing_first_predicted_score.tolist() if isinstance(chasing_first_predicted_score, (np.ndarray, pd.Series)) else float(chasing_first_predicted_score),
-            "points": points.tolist() if isinstance(points, (np.ndarray, pd.Series)) else float(points) if points else 42,
+            "points": points.tolist() if isinstance(points, (np.ndarray, pd.Series)) else (float(points) if not np.isnan(points) else 42),
             "rank": rank.tolist() if isinstance(rank, (np.ndarray, pd.Series)) else float(rank),
             "y_actual": y_actual.tolist() if isinstance(y_actual, (np.ndarray, pd.Series)) else y_actual,
             "y_pred": y_pred.tolist() if isinstance(y_pred, (np.ndarray, pd.Series)) else y_pred,
             "mod_player_id": mod_player_id.to_dict('records') if isinstance(mod_player_id, pd.DataFrame) else [{'player_id': int(t[0]), 'y': float(t[1])} for t in mod_player_id] if isinstance(mod_player_id, np.ndarray) else mod_player_id,
             "date_of_match": [str(d) for d in date_of_match] if isinstance(date_of_match, (list, np.ndarray, pd.Series)) else str(date_of_match),
-            "team1": team1.to_dict('records') if isinstance(team1, pd.DataFrame) else [{'player_id': int(t[0]), 'y': float(t[1])} for t in team1] if isinstance(team1, np.ndarray) else team1,
-            "team2": team2.to_dict('records') if isinstance(team2, pd.DataFrame) else [{'player_id': int(t[0]), 'y': float(t[1])} for t in team2] if isinstance(team2, np.ndarray) else team2,
-            "temp": temp,
+           "temp": temp,
             "risk": risk,
             "venue": venue
         }
