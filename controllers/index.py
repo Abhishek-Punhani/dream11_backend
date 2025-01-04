@@ -191,14 +191,14 @@ def chatbot():
         user_query = data.get("user_query")
         match_no = data.get("match_no")
 
-        # if match_no:
-        #     chatbot = Chatbot(match_no)
-        # else:
-        #     chatbot = Chatbot()
+        if match_no:
+            chatbot = Chatbot(match_no)
+        else:
+            chatbot = Chatbot()
 
-        # response = chatbot.handle_query(player1_id, player2_id, user_query)
+        response = chatbot.handle_query(player1_id, player2_id, user_query)
 
-        # return jsonify(response), 200
+        return jsonify(response), 200
      except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
